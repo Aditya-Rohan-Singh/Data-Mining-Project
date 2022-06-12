@@ -16,7 +16,7 @@ search_words = "Depp"
 
 tweets = tw.Cursor(api.search_tweets, q=search_words, lang="en").items(2000)
 
-df = open('Tweets.csv', 'a')
+df = open('Tweets.csv', 'w')
 
 write=csv.writer(df)
 
