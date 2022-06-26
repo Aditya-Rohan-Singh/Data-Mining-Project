@@ -1,4 +1,5 @@
 
+from random import sample
 import numpy as np
 from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
@@ -9,6 +10,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import TweetTokenizer
 import pandas as pd
+import pickle
 from wordcloud import WordCloud, STOPWORDS
 nltk.download('wordnet')
 nltk.download('omw-1.4')
@@ -36,7 +38,7 @@ def process_tweet(tweet):
     #Import the english stop words list from NLTK
     stopwords_english = stopwords.words('english') 
     stopwords1 = set(STOPWORDS)
-    stopwords1.update(["br", "href","https","t","co","c","b'RT","b'","'","neg","b","neg'"])
+    stopwords1.update(["br", "href","https","t","co","c","b'RT","b'","'","b"])
     
     #Creating a list of words without stopwords
     clean_tweets = []
@@ -57,7 +59,7 @@ def process_tweet(tweet):
     return lem_word
 
 
-def frequency_builder(tweets, label_train):
+def frequency_builder(sample_train, label_train):
     label_train_list = np.squeeze(label_train).tolist()
   
     freqs = {}
@@ -114,20 +116,19 @@ df.columns = ['label','id','date','query','user','tweet']
 tweet_data = df.tweet
 tweet_label = df.label
 
-n=len(tweet_data)
-n_train = int(n*0.80)
-n_test = int(n*0.20)
+#n=len(tweet_data)
+#n_train = int(n*0.80)
+#n_test = int(n*0.20)
 
-sample_train = tweet_data[:n_train]
-sample_test = tweet_data[n-n_test:]
+#ample_train = tweet_data[:n_train]
+#sample_test = tweet_data[n-n_test:]
 
 
-label_train = tweet_label[0:n_train]
-label_test = tweet_label[n-n_test:]
+#label_train = tweet_label[0:n_train]
+#label_test = tweet_label[n-n_test:]
 
 #Create frequency table based on sample data
-freqs=frequency_builder(sample_train,label_train)
-
+#freqs=frequency_builder(sample_train,label_train)
 
 
 #Building training and testing sets
@@ -139,10 +140,14 @@ negative = df[df['label'] == 0]
 #Positive sets
 sample_positive=np.array(positive.tweet)
 label_positive=np.array(positive.label)
+sample_positive = sample_positive[0:35000]
+label_positive= label_positive[0:35000]
 
 n1=len(sample_positive)
-n_train_pos = int(n1*0.80)
-n_test_pos = int(n1*0.20)
+
+n_train_pos = 25000#int(n1*0.8)
+n_test_pos = 10000#int(n1*0.2)
+print("Positive Sample Size:(Train,test)",n_train_pos,n_test_pos)
 
 sample_train_positive=sample_positive[0:n_train_pos]
 sample_test_positive=sample_positive[n1-n_test_pos:]
@@ -152,14 +157,19 @@ label_test_positive=label_positive[n1-n_test_pos:]
 
 label_train_positive=np.array(label_train_positive)
 label_train_positive=np.array(label_train_positive)
+
 #--------------------------------------------------------
 #Negative sets
 sample_negative=np.array(negative.tweet)
 label_negative=np.array(negative.label)
+sample_negative = sample_negative[0:35000]
+label_negative= label_negative[0:35000]
 
 n2=len(sample_negative)
-n_train_neg = int(n2*0.80)
-n_test_neg = int(n2*0.20)
+print(n2)
+n_train_neg = 25000#int(n2*0.8)
+n_test_neg = 10000#int(n2*0.2)
+print("Negative Sample Size:(Train,test)",n_train_neg,n_test_neg)
 
 sample_train_negative=sample_negative[0:n_train_neg]
 sample_test_negative=sample_negative[n2-n_test_neg:]
@@ -183,15 +193,22 @@ f3=[label_test_positive,label_test_negative]
 label_test=np.concatenate(f3)
 
 
+
 # combine positive and negative labels
 train_y = np.append(np.ones((len(label_train_positive), 1)), np.zeros((len(label_train_negative), 1)), axis=0)
 test_y = np.append(np.ones((len(label_test_positive), 1)), np.zeros((len(label_test_negative), 1)), axis=0)
 
+freqs=frequency_builder(train_sample,train_y)
+print("Frequency Build done")
+
+with open('saved_frequency.pkl', 'wb') as f:
+    pickle.dump(freqs, f)
+
 n,p=np.array(train_y).shape
-print(n,p)
+print("Training Labels:",n,p)
 
 n,p=np.array(test_y).shape
-print(n,p)
+print("Testing Labels",n,p)
 
 
 X = np.zeros((len(train_sample), 3))
@@ -200,14 +217,15 @@ for i in range(len(train_sample)):
 
 Y = train_y
 B=np.zeros((3, 1))
-alpha=0.00001
+alpha=0.01
 B=gradient_Descent(X, Y, B, alpha, 1500)
 
-
+print(B)
 Label_pred = []
 for tweet in test_sample:
-    y_pred = predict_tweet(tweet, freqs, B)
-    if y_pred > 0.50:
+    y_pred = predict_tweet(tweet, freqs, B)[0][0]
+    #print(y_pred)
+    if y_pred > 0.40:
         Label_pred.append(4)
     else:
         Label_pred.append(0)
@@ -216,6 +234,9 @@ for tweet in test_sample:
 Label_pred = np.array(Label_pred)
 test_y = test_y.reshape(-1)
 accuracy = np.sum((test_y == Label_pred).astype(int))/len(test_sample)
+print(label_test[0:100])
+print("----------------")
+print(Label_pred[0:100])
 mse_test_N=mean_squared_error(label_test,Label_pred)
 print(accuracy)
 print(mse_test_N)
