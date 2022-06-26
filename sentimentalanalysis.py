@@ -116,19 +116,6 @@ df.columns = ['label','id','date','query','user','tweet']
 tweet_data = df.tweet
 tweet_label = df.label
 
-#n=len(tweet_data)
-#n_train = int(n*0.80)
-#n_test = int(n*0.20)
-
-#ample_train = tweet_data[:n_train]
-#sample_test = tweet_data[n-n_test:]
-
-
-#label_train = tweet_label[0:n_train]
-#label_test = tweet_label[n-n_test:]
-
-#Create frequency table based on sample data
-#freqs=frequency_builder(sample_train,label_train)
 
 
 #Building training and testing sets
@@ -211,17 +198,36 @@ n,p=np.array(test_y).shape
 print("Testing Labels",n,p)
 
 
+#Converting training data into features.
 X = np.zeros((len(train_sample), 3))
 for i in range(len(train_sample)):
     X[i, :]= extract_features(train_sample[i], freqs)
 
 Y = train_y
 B=np.zeros((3, 1))
-alpha=0.01
+alpha=0.0001
+
+
+#KNN
+#-----------------------------------------------------------------
+#for i in range(len(test_sample)):
+#    X_test[i, :]= extract_features(test_sample[i], freqs)
+
+
+##Write knn code here
+
+#---------------------------------------------------
+
+
+
+#Gradient Descent
+#-----------------------------------------------
 B=gradient_Descent(X, Y, B, alpha, 1500)
 
 print(B)
+
 Label_pred = []
+#Predicting data from B value
 for tweet in test_sample:
     y_pred = predict_tweet(tweet, freqs, B)[0][0]
     #print(y_pred)
@@ -230,13 +236,15 @@ for tweet in test_sample:
     else:
         Label_pred.append(0)
 
+#------------------------------------------------------
+
 
 Label_pred = np.array(Label_pred)
 test_y = test_y.reshape(-1)
 accuracy = np.sum((test_y == Label_pred).astype(int))/len(test_sample)
-print(label_test[0:100])
+print(test_y[0:100])
 print("----------------")
 print(Label_pred[0:100])
-mse_test_N=mean_squared_error(label_test,Label_pred)
+mse_test_N=mean_squared_error(test_y,Label_pred)
 print(accuracy)
 print(mse_test_N)
