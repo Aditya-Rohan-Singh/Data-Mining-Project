@@ -42,28 +42,28 @@ def process_tweet(tweet):
     
     #Creating a list of words without stopwords
     clean_tweets = []
+
     for word in tweet_tokens:
         if word not in stopwords_english and word not in string.punctuation and word not in stopwords1 :
             clean_tweets.append(word)
-        
+    
     #Instantiate Lemmetizer class
     lemmatizer = WordNetLemmatizer()
     
     #Creating a list of lemmetized of words in tweet
     lem_word = []
     for word in clean_tweets:
-        lem_word = lemmatizer.lemmatize(word)
-        #lem_word.append(stem_word)
-        lem_word = lem_word + " " + word
-        
+        lem_word1 = lemmatizer.lemmatize(word)
+        lem_word.append(lem_word1)    
     return lem_word
 
 
 def frequency_builder(sample_train, label_train):
     label_train_list = np.squeeze(label_train).tolist()
-  
+    
     freqs = {}
     for y, tweet in zip(label_train_list, sample_train):
+        #print(y, tweet)
         for word in process_tweet(tweet):
                 pair = (word, y)
                 freqs[pair] = freqs.get(pair, 0) + 1
@@ -99,6 +99,23 @@ def gradient_Descent(x, y, B, alpha, num_iters):
         s = sigmoid_func(x,B)
         B = B - (alpha/m)*np.dot(x.T, s-y)
     return B
+
+def newtons(x, y, B1, num_iters):
+    W=[ [0]*len(x) for i in range(len(x))]
+    P=np.zeros(x)
+    ST=x.transpose()
+    for i in range(0, num_iters):
+        S=sigmoid_func(x,B1)
+        S1=np.exp(x@B1)/S
+        W=np.diag(np.ravel(np.exp(x@B1)/np.power(1+np.exp(x@B1),2)))
+
+        #Calculating p vector
+        P=sigmoid_func(x, B1)
+        W=np.array(W)
+        P=np.array(P)
+        B1=B1-(np.linalg.inv(ST@W@x))@(ST@(P-y))
+    
+    return(B1)
 
 def predict_tweet(tweet, freqs, B):
     x = extract_features(tweet, freqs)
@@ -188,6 +205,7 @@ test_y = np.append(np.ones((len(label_test_positive), 1)), np.zeros((len(label_t
 freqs=frequency_builder(train_sample,train_y)
 print("Frequency Build done")
 
+print(freqs)
 with open('saved_frequency.pkl', 'wb') as f:
     pickle.dump(freqs, f)
 
@@ -203,6 +221,10 @@ X = np.zeros((len(train_sample), 3))
 for i in range(len(train_sample)):
     X[i, :]= extract_features(train_sample[i], freqs)
 
+
+with open('training_features.pkl', 'wb') as f:
+    pickle.dump(X, f)    
+
 Y = train_y
 B=np.zeros((3, 1))
 alpha=0.0001
@@ -210,6 +232,7 @@ alpha=0.0001
 
 #KNN
 #-----------------------------------------------------------------
+#X_test = np.zeros((len(test_sample), 3))
 #for i in range(len(test_sample)):
 #    X_test[i, :]= extract_features(test_sample[i], freqs)
 
@@ -222,17 +245,22 @@ alpha=0.0001
 
 #Gradient Descent
 #-----------------------------------------------
+print(X[0:10])
 B=gradient_Descent(X, Y, B, alpha, 1500)
+#B=newtons(X, Y, B,1500)
 
 print(B)
+
+with open('Beta.pkl', 'wb') as f:
+    pickle.dump(B, f)
 
 Label_pred = []
 #Predicting data from B value
 for tweet in test_sample:
     y_pred = predict_tweet(tweet, freqs, B)[0][0]
     #print(y_pred)
-    if y_pred > 0.40:
-        Label_pred.append(4)
+    if y_pred > 0.45:
+        Label_pred.append(1)
     else:
         Label_pred.append(0)
 
