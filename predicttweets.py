@@ -1,4 +1,6 @@
 import pickle
+from tkinter.tix import COLUMN
+from wsgiref import headers
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import TweetTokenizer
 import re
@@ -103,24 +105,21 @@ with open('Beta.pkl', 'rb') as f:
 
 encoding_used = "ISO-8859-1"
 test_sample = pd.read_csv("Tweets.csv", header = None, encoding = encoding_used)
-test_sample.columns = ["name","tweet"]
-test_sample = test_sample["tweet"]
 test_sample.columns = ["tweet"]
 sample = test_sample
 
 
-test_sample = np.array(test_sample)
+test_sample2 = np.array(test_sample)
 
 #Cleaning data
 test_sample1 = []
-for i in range(len(test_sample)):
-    test_sample1.append(test_sample[i][0])
+for i in range(len(test_sample2)):
+    test_sample1.append(test_sample2[i][0])
 
 
 Label_pred = []
 #Predicting data from B value
-for tweet in test_sample:
-    tweet = tweet[0]
+for tweet in test_sample1:
     y_pred = predict_tweet(tweet, loaded_dict, loaded_dict_B)[0][0]
     #print(y_pred)
     if y_pred > 0.45:
@@ -131,8 +130,10 @@ for tweet in test_sample:
 
 #Saving CSV files tweet and its predicted label
 Label_pred = np.array(Label_pred)
-sample["label"] = Label_pred
-prediction_freq = frequency_builder(test_sample1, Label_pred)
+se = pd.Series(Label_pred)
+sample["label"] = se.values
+print(sample.head(5))
+
 positive = sample[sample['label'] == 1]
 negative = sample[sample['label'] == 0]
 sample.to_csv('predicted_data.csv')
@@ -142,6 +143,7 @@ negative.to_csv('negative.csv')
 
 
 #Storing the top 10 positive words and negative words
+prediction_freq = frequency_builder(test_sample1, Label_pred)
 words = sorted(prediction_freq, key=prediction_freq.get, reverse=True)#[:10]
 
 i = 0
@@ -157,7 +159,8 @@ for x, y in words:
 positive_words = positive_words[:10]
 negative_words = negative_words[:10]
 top_words = pd.DataFrame(positive_words,columns=["Positive"])
-top_words["Negative"] = negative_words
+if(len(negative_words) == len(positive_words)):
+    top_words["Negative"] = negative_words
 top_words.to_csv("top_words.csv")
 print(top_words)
 
