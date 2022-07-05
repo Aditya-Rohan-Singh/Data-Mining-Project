@@ -103,6 +103,8 @@ with open('Beta.pkl', 'rb') as f:
 
 encoding_used = "ISO-8859-1"
 test_sample = pd.read_csv("Tweets.csv", header = None, encoding = encoding_used)
+test_sample.columns = ["name","tweet"]
+test_sample = test_sample["tweet"]
 test_sample.columns = ["tweet"]
 sample = test_sample
 
