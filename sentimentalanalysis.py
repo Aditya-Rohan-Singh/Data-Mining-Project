@@ -1,4 +1,5 @@
 
+from email import header
 from random import sample
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -12,9 +13,9 @@ from nltk.tokenize import TweetTokenizer
 import pandas as pd
 import pickle
 from wordcloud import WordCloud, STOPWORDS
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-
+#nltk.download('wordnet')
+#nltk.download('omw-1.4')
+import matplotlib.patches as mpatches
 
 ##Functions
 def process_tweet(tweet):
@@ -102,7 +103,7 @@ def gradient_Descent(x, y, B, alpha, num_iters):
 
 def newtons(x, y, B1, num_iters):
     W=[ [0]*len(x) for i in range(len(x))]
-    P=np.zeros(x)
+    P=np.zeros(len(x))
     ST=x.transpose()
     for i in range(0, num_iters):
         S=sigmoid_func(x,B1)
@@ -149,8 +150,8 @@ label_positive= label_positive[0:35000]
 
 n1=len(sample_positive)
 
-n_train_pos = 25000#int(n1*0.8)
-n_test_pos = 10000#int(n1*0.2)
+n_train_pos = 2500#int(n1*0.8)
+n_test_pos = 1000#int(n1*0.2)
 print("Positive Sample Size:(Train,test)",n_train_pos,n_test_pos)
 
 sample_train_positive=sample_positive[0:n_train_pos]
@@ -171,8 +172,8 @@ label_negative= label_negative[0:35000]
 
 n2=len(sample_negative)
 print(n2)
-n_train_neg = 25000#int(n2*0.8)
-n_test_neg = 10000#int(n2*0.2)
+n_train_neg = 2500#int(n2*0.8)
+n_test_neg = 1000#int(n2*0.2)
 print("Negative Sample Size:(Train,test)",n_train_neg,n_test_neg)
 
 sample_train_negative=sample_negative[0:n_train_neg]
@@ -205,7 +206,7 @@ test_y = np.append(np.ones((len(label_test_positive), 1)), np.zeros((len(label_t
 freqs=frequency_builder(train_sample,train_y)
 print("Frequency Build done")
 
-print(freqs)
+#print(freqs)
 with open('saved_frequency.pkl', 'wb') as f:
     pickle.dump(freqs, f)
 
@@ -230,24 +231,13 @@ B=np.zeros((3, 1))
 alpha=0.0001
 
 
-#KNN
-#-----------------------------------------------------------------
-#X_test = np.zeros((len(test_sample), 3))
-#for i in range(len(test_sample)):
-#    X_test[i, :]= extract_features(test_sample[i], freqs)
-
-
-##Write knn code here
-
-#---------------------------------------------------
-
 
 
 #Gradient Descent
 #-----------------------------------------------
-print(X[0:10])
-B=gradient_Descent(X, Y, B, alpha, 1500)
-#B=newtons(X, Y, B,1500)
+
+#B=gradient_Descent(X, Y, B, alpha, 1500)
+B=newtons(X, Y, B,1500)
 
 print(B)
 
@@ -276,3 +266,15 @@ print(Label_pred[0:100])
 mse_test_N=mean_squared_error(test_y,Label_pred)
 print(accuracy)
 print(mse_test_N)
+
+sample = pd.DataFrame(test_sample, columns=["tweet"])
+Label_pred = np.array(Label_pred)
+se = pd.Series(Label_pred)
+sample["label"] = se.values
+result = sample.groupby(['label']).count()
+result.plot(kind="bar")
+xlabel = ["Positive(1)", "Negative(0)"]
+pos = mpatches.Patch(color='blue', label='Positive(1)')
+neg = mpatches.Patch(color='blue', label='Negative(0)')
+plt.legend(handles=[pos,neg], loc=2)
+plt.savefig('1.jpeg')
